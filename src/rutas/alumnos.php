@@ -115,7 +115,6 @@ $app->group('/api', function (RouteCollectorProxy $group){
         $group->post('/alumnos/entrada', function (Request $request, Response $response, $args){
             $datos = $request->getParsedBody();
             $rfid = filter_var($datos['rfid'], FILTER_SANITIZE_STRING);
-            $fecha = date("Y-m-d");
 
             $sql = "INSERT INTO registros (rfid, fecha, hora_entrada) VALUES (:rfid, CURDATE(), CURTIME())";
 
@@ -126,8 +125,6 @@ $app->group('/api', function (RouteCollectorProxy $group){
                 $stmt = $db->prepare($sql);
 
                 $stmt->bindParam(':rfid', $rfid);
-                // $stmt->bindParam(':fecha', $fecha);
-                // $stmt->bindParam(':hora_entrada', $hora_entrada);
 
                 $stmt->execute();
 
@@ -140,7 +137,42 @@ $app->group('/api', function (RouteCollectorProxy $group){
                 return $response;
             }
         });
+        $group->put('/alumnos/modificar/{id}', function (Request $request, Response $response, $args){
+            
+            $id_alumno = $request->getAttribute('id');
+            
+            parse_str($request->getBody()->getContents(), $datos);
+            
+            $nombre = filter_var($datos['nombre'], FILTER_SANITIZE_STRING);
+            $carrera = filter_var($datos['carrera'], FILTER_SANITIZE_STRING);
+            $matricula = filter_var($datos['matricula'], FILTER_SANITIZE_STRING);
+            $rfid = filter_var($datos['rfid'], FILTER_SANITIZE_STRING);
 
+            $sql = "UPDATE alumnos SET nombre = :nombre, carrera = :carrera, matricula = :matricula, rfid = :rfid WHERE id = :id";
+            
+            try {
+                $db = new db();
+                $db = $db->conexionDB();
+
+                $stmt = $db->prepare($sql);
+
+                $stmt->bindParam(':nombre', $nombre);
+                $stmt->bindParam(':carrera', $carrera);
+                $stmt->bindParam(':matricula', $matricula);
+                $stmt->bindParam(':rfid', $rfid);
+                $stmt->bindParam(':id', $id_alumno);
+
+                $stmt->execute();
+
+                $response->withHeader('Content-Type', 'application/json');
+                $response->getBody()->write(json_encode("datos de alumno modificados"));
+                return $response;
+            } catch (PDOException $e) {
+                $payload = '{"error":{"text":'.$e->getMessage().'}}';
+                $response->getBody()->write($payload);
+                return $response;
+            }
+        });
     });
 });
 
