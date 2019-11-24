@@ -10,7 +10,7 @@ $app = AppFactory::create();
 $app->group('/api', function (RouteCollectorProxy $group){
     $group->group('/v1', function (RouteCollectorProxy $group){
         $group->get('/test', function (Request $request, Response $response, $args){
-            $response->getBody()->write(json_encode('funciona'));
+            $response->getBody()->write('{"respuesta":"funciona"}');
             return $response;
         });
         $group->get('/alumnos', function (Request $request, Response $response, $args) {
@@ -34,8 +34,7 @@ $app->group('/api', function (RouteCollectorProxy $group){
                     $response->getBody()->write($json);
                     return $response;
                 }else{
-                    // $payload = "no hay datos";
-                    $payload = json_encode("no hay datos");
+                    $payload = '{"respuesta":"no hay datos"}';
                     $response->getBody()->write($payload);
                     return $response;
                 }
@@ -71,7 +70,7 @@ $app->group('/api', function (RouteCollectorProxy $group){
                     $response->getBody()->write($json);
                     return $response;
                 }else{
-                    $payload = json_encode("no hay datos");
+                    $payload = '{"respuesta":"no hay datos"}';
                     $response->getBody()->write($payload);
                     return $response;
                 }
@@ -88,7 +87,11 @@ $app->group('/api', function (RouteCollectorProxy $group){
             $matricula = filter_var($datos['matricula'], FILTER_SANITIZE_STRING);
             $rfid = filter_var($datos['rfid'], FILTER_SANITIZE_STRING);
             
-            $sql = "INSERT INTO alumnos (nombre, carrera, matricula, rfid) VALUES (:nombre, :carrera, :matricula, :rfid)";
+            $sql = "INSERT INTO alumnos (nombre, carrera, matricula, rfid) VALUES 
+                    (:nombre,
+                    :carrera, 
+                    :matricula, 
+                    :rfid)";
 
             try {
                 $db = new db();
@@ -104,7 +107,8 @@ $app->group('/api', function (RouteCollectorProxy $group){
                 $stmt->execute();
 
                 $response->withHeader('Content-Type', 'application/json');
-                $response->getBody()->write(json_encode("nuevo alumno guardado"));
+                $payload = '{"respuesta":"nuevo alumno guardado"}';
+                $response->getBody()->write($payload);
                 return $response;
             } catch (PDOException $e) {
                 $payload = '{"error":{"text":'.$e->getMessage().'}}';
@@ -112,11 +116,16 @@ $app->group('/api', function (RouteCollectorProxy $group){
                 return $response;
             }
         });
-        $group->post('/alumnos/entrada', function (Request $request, Response $response, $args){
+        $group->post('/alumnos/registro', function (Request $request, Response $response, $args){
             $datos = $request->getParsedBody();
             $rfid = filter_var($datos['rfid'], FILTER_SANITIZE_STRING);
+            $accion = filter_var($datos['accion'], FILTER_SANITIZE_STRING);
 
-            $sql = "INSERT INTO registros (rfid, fecha, hora_entrada) VALUES (:rfid, CURDATE(), CURTIME())";
+            $sql = "INSERT INTO registros (rfid, fecha, hora, accion) VALUES 
+                    (:rfid, 
+                    CURDATE(), 
+                    CURTIME(), 
+                    :accion)";
 
             try {
                 $db = new db();
@@ -125,11 +134,13 @@ $app->group('/api', function (RouteCollectorProxy $group){
                 $stmt = $db->prepare($sql);
 
                 $stmt->bindParam(':rfid', $rfid);
+                $stmt->bindParam(':accion', $accion);
 
                 $stmt->execute();
 
                 $response->withHeader('Content-Type', 'application/json');
-                $response->getBody()->write(json_encode("nuevo registro guardado"));
+                $payload = '{"respuesta":"nuevo registro guardado"}';
+                $response->getBody()->write($payload);
                 return $response;
             } catch (PDOException $e) {
                 $payload = '{"error":{"text":'.$e->getMessage().'}}';
@@ -137,18 +148,21 @@ $app->group('/api', function (RouteCollectorProxy $group){
                 return $response;
             }
         });
-        $group->put('/alumnos/modificar/{id}', function (Request $request, Response $response, $args){
-            
-            $id_alumno = $request->getAttribute('id');
+        $group->put('/alumnos/modificar', function (Request $request, Response $response, $args){
             
             parse_str($request->getBody()->getContents(), $datos);
             
+            $id_alumno = filter_var($datos['id'], FILTER_SANITIZE_STRING);
             $nombre = filter_var($datos['nombre'], FILTER_SANITIZE_STRING);
             $carrera = filter_var($datos['carrera'], FILTER_SANITIZE_STRING);
             $matricula = filter_var($datos['matricula'], FILTER_SANITIZE_STRING);
             $rfid = filter_var($datos['rfid'], FILTER_SANITIZE_STRING);
 
-            $sql = "UPDATE alumnos SET nombre = :nombre, carrera = :carrera, matricula = :matricula, rfid = :rfid WHERE id = :id";
+            $sql = "UPDATE alumnos SET 
+                    nombre = :nombre, 
+                    carrera = :carrera, 
+                    matricula = :matricula, 
+                    rfid = :rfid WHERE id = :id";
             
             try {
                 $db = new db();
@@ -166,6 +180,41 @@ $app->group('/api', function (RouteCollectorProxy $group){
 
                 $response->withHeader('Content-Type', 'application/json');
                 $response->getBody()->write(json_encode("datos de alumno modificados"));
+                return $response;
+            } catch (PDOException $e) {
+                $payload = '{"error":{"text":'.$e->getMessage().'}}';
+                $response->getBody()->write($payload);
+                return $response;
+            }
+        });
+        $group->delete('/alumnos/borrar', function (Request $request, Response $response, $args){
+            
+            parse_str($request->getBody()->getContents(), $datos);
+            
+            $id_alumno = filter_var($datos['id'], FILTER_SANITIZE_STRING);
+            // $nombre = filter_var($datos['nombre'], FILTER_SANITIZE_STRING);
+            // $carrera = filter_var($datos['carrera'], FILTER_SANITIZE_STRING);
+            // $matricula = filter_var($datos['matricula'], FILTER_SANITIZE_STRING);
+            // $rfid = filter_var($datos['rfid'], FILTER_SANITIZE_STRING);
+
+            $sql = "DELETE FROM alumnos WHERE id = :id";
+            
+            try {
+                $db = new db();
+                $db = $db->conexionDB();
+
+                $stmt = $db->prepare($sql);
+
+                // $stmt->bindParam(':nombre', $nombre);
+                // $stmt->bindParam(':carrera', $carrera);
+                // $stmt->bindParam(':matricula', $matricula);
+                // $stmt->bindParam(':rfid', $rfid);
+                $stmt->bindParam(':id', $id_alumno);
+
+                $stmt->execute();
+
+                $response->withHeader('Content-Type', 'application/json');
+                $response->getBody()->write(json_encode("datos de alumno borrados"));
                 return $response;
             } catch (PDOException $e) {
                 $payload = '{"error":{"text":'.$e->getMessage().'}}';
