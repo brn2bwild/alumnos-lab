@@ -11,7 +11,8 @@ $app = AppFactory::create();
 $app->group('/api', function (RouteCollectorProxy $group){
     $group->group('/v1', function (RouteCollectorProxy $group){
         $group->get('/test', function (Request $request, Response $response, $args){
-            echo $llave;
+            $jwt = auth::generarJWT();
+            var_dump($jwt);
             // $tiempo = time();
             // // $llave = 'mi_llave';
 
