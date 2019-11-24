@@ -4,13 +4,34 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 use Psr\Http\Message\RequestHandlerInterface as RequestHandler;
 use Slim\Factory\AppFactory;
 use Slim\Routing\RouteCollectorProxy;
+use Firebase\JWT\JWT;
 
 $app = AppFactory::create();
 
 $app->group('/api', function (RouteCollectorProxy $group){
     $group->group('/v1', function (RouteCollectorProxy $group){
         $group->get('/test', function (Request $request, Response $response, $args){
+            echo $llave;
+            // $tiempo = time();
+            // // $llave = 'mi_llave';
+
+            // $token = array(
+            //     'iat' => $tiempo,
+            //     'exp' => $tiempo + 60,
+            //     'data' => [
+            //         'id' => 1,
+            //         'nombre' => 'Eduardo'
+            //     ]
+            // );
+
+            // $jwt = JWT::encode($token, $key);
+
+            // $data = JWT::decode($jwt, $llave, array('HS256'));
+
+            // var_dump($data);
+            // var_dump($jwt);
             $response->getBody()->write('{"respuesta":"funciona"}');
+            // $response->getBody()->write($jwt);
             return $response;
         });
         $group->get('/alumnos', function (Request $request, Response $response, $args) {
@@ -192,10 +213,6 @@ $app->group('/api', function (RouteCollectorProxy $group){
             parse_str($request->getBody()->getContents(), $datos);
             
             $id_alumno = filter_var($datos['id'], FILTER_SANITIZE_STRING);
-            // $nombre = filter_var($datos['nombre'], FILTER_SANITIZE_STRING);
-            // $carrera = filter_var($datos['carrera'], FILTER_SANITIZE_STRING);
-            // $matricula = filter_var($datos['matricula'], FILTER_SANITIZE_STRING);
-            // $rfid = filter_var($datos['rfid'], FILTER_SANITIZE_STRING);
 
             $sql = "DELETE FROM alumnos WHERE id = :id";
             
@@ -205,16 +222,12 @@ $app->group('/api', function (RouteCollectorProxy $group){
 
                 $stmt = $db->prepare($sql);
 
-                // $stmt->bindParam(':nombre', $nombre);
-                // $stmt->bindParam(':carrera', $carrera);
-                // $stmt->bindParam(':matricula', $matricula);
-                // $stmt->bindParam(':rfid', $rfid);
                 $stmt->bindParam(':id', $id_alumno);
 
                 $stmt->execute();
 
                 $response->withHeader('Content-Type', 'application/json');
-                $response->getBody()->write(json_encode("datos de alumno borrados"));
+                $response->getBody()->write('{"respuesta":"datos de alumno borrados"}');
                 return $response;
             } catch (PDOException $e) {
                 $payload = '{"error":{"text":'.$e->getMessage().'}}';
