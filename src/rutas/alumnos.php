@@ -103,7 +103,9 @@ $app->group('/api', function (RouteCollectorProxy $group){
             }
         });
         $group->post('/alumnos/nuevo', function (Request $request, Response $response, $args){
-            $datos = $request->getParsedBody();
+            // $datos = $request->getParsedBody();
+
+            $datos = json_decode(file_get_contents('php://input'), true);
             $nombre = filter_var($datos['nombre'], FILTER_SANITIZE_STRING);
             $carrera = filter_var($datos['carrera'], FILTER_SANITIZE_STRING);
             $matricula = filter_var($datos['matricula'], FILTER_SANITIZE_STRING);
@@ -139,7 +141,9 @@ $app->group('/api', function (RouteCollectorProxy $group){
             }
         });
         $group->post('/alumnos/registro', function (Request $request, Response $response, $args){
-            $datos = $request->getParsedBody();
+            // $datos = $request->getParsedBody();
+
+            $datos = json_decode(file_get_contents('php://input'), true);
             $rfid = filter_var($datos['rfid'], FILTER_SANITIZE_STRING);
             $accion = filter_var($datos['accion'], FILTER_SANITIZE_STRING);
 
@@ -172,8 +176,9 @@ $app->group('/api', function (RouteCollectorProxy $group){
         });
         $group->put('/alumnos/modificar', function (Request $request, Response $response, $args){
             
-            parse_str($request->getBody()->getContents(), $datos);
-            
+            // parse_str($request->getBody()->getContents(), $datos);
+
+            $datos = json_decode(file_get_contents('php://input'), true);
             $id_alumno = filter_var($datos['id'], FILTER_SANITIZE_STRING);
             $nombre = filter_var($datos['nombre'], FILTER_SANITIZE_STRING);
             $carrera = filter_var($datos['carrera'], FILTER_SANITIZE_STRING);
@@ -211,8 +216,9 @@ $app->group('/api', function (RouteCollectorProxy $group){
         });
         $group->delete('/alumnos/borrar', function (Request $request, Response $response, $args){
             
-            parse_str($request->getBody()->getContents(), $datos);
-            
+            // parse_str($request->getBody()->getContents(), $datos);
+
+            $datos = json_decode(file_get_contents('php://input'), true);
             $id_alumno = filter_var($datos['id'], FILTER_SANITIZE_STRING);
 
             $sql = "DELETE FROM alumnos WHERE id = :id";
