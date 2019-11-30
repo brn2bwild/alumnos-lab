@@ -3,7 +3,7 @@
         private $dbHost = 'localhost';
         private $dbUser = 'root';
         private $dbPass = '';
-        private $dbName = 'lab_alumnos';
+        private $dbName = 'practicas';
 
         public function conexionDB(){
             $mysqlConnect = "mysql:host=$this->dbHost;dbname=$this->dbName;charset=utf8";

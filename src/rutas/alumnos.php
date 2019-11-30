@@ -31,216 +31,324 @@ $app->group('/api', function (RouteCollectorProxy $group){
 
             // var_dump($data);
             // var_dump($jwt);
+
+
             $response->getBody()->write('{"respuesta":"funciona"}');
             // $response->getBody()->write($jwt);
             return $response;
         });
-        $group->get('/alumnos', function (Request $request, Response $response, $args) {
-            $sql = "SELECT * FROM alumnos";
-    
-            try {
-                $db = new db();
-                $db = $db->conexionDB();
-    
-                $stmt = $db->prepare($sql);
-                $stmt->execute();
-    
-                if($stmt->rowCount() > 0){
-                    $alumnos = $stmt->fetchAll(PDO::FETCH_ASSOC);
-                    // print_r($alumnos);
-    
-                    $json = json_encode($alumnos);
-                    // print_r (json_last_error());
-    
-                    $response->withHeader('Content-Type', 'application/json');
-                    $response->getBody()->write($json);
-                    return $response;
-                }else{
-                    $payload = '{"respuesta":"no hay datos"}';
+        $group->group('/alumnos', function (RouteCollectorProxy $group){
+            $group->get('/', function (Request $request, Response $response, $args) {
+                $sql = "SELECT * FROM alumnos";
+        
+                try {
+                    $db = new db();
+                    $db = $db->conexionDB();
+        
+                    $stmt = $db->prepare($sql);
+                    $stmt->execute();
+        
+                    if($stmt->rowCount() > 0){
+                        $alumnos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                        // print_r($alumnos);
+        
+                        $json = json_encode($alumnos);
+                        // print_r (json_last_error());
+        
+                        $response->withHeader('Content-Type', 'application/json');
+                        $response->getBody()->write($json);
+                        return $response;
+                    }else{
+                        $payload = '{"respuesta":"no hay datos"}';
+                        $response->getBody()->write($payload);
+                        return $response;
+                    }
+        
+                    $stmt = null;
+                    $db = null;
+        
+                } catch (PDOException $e) {
+                    // $payload = "exception";
+                    $payload = '{"error":{"text":'.$e->getMessage().'}}';
                     $response->getBody()->write($payload);
                     return $response;
                 }
+            });
+            $group->get('/{id}', function (Request $request, Response $response, $args){
+                $id_alumno = $request->getAttribute('id');
     
-                $stmt = null;
-                $db = null;
+                $sql = "SELECT * FROM alumnos WHERE id_alumno = :id";
     
-            } catch (PDOException $e) {
-                // $payload = "exception";
-                $payload = '{"error":{"text":'.$e->getMessage().'}}';
-                $response->getBody()->write($payload);
-                return $response;
-            }
-        });
-        $group->get('/alumnos/{id}', function (Request $request, Response $response, $args){
-            $id_alumno = $request->getAttribute('id');
-
-            $sql = "SELECT * FROM alumnos WHERE id = $id_alumno";
-
-            try {
-                $db = new db();
-                $db = $db->conexionDB();
-
-                $stmt = $db->prepare($sql);
-                $stmt->execute();
-
-                if($stmt->rowCount() > 0){
-                    $alumno = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-                    $json = json_encode($alumno);
-
-                    $response->withHeader('Content-Type', 'application/json');
-                    $response->getBody()->write($json);
-                    return $response;
-                }else{
-                    $payload = '{"respuesta":"no hay datos"}';
+                try {
+                    $db = new db();
+                    $db = $db->conexionDB();
+    
+                    $stmt = $db->prepare($sql);
+                    $stmt->bindParam(':id', $id_alumno);
+                    $stmt->execute();
+    
+                    if($stmt->rowCount() > 0){
+                        $alumno = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+                        $json = json_encode($alumno);
+    
+                        $response->withHeader('Content-Type', 'application/json');
+                        $response->getBody()->write($json);
+                        return $response;
+                    }else{
+                        $payload = '{"respuesta":"no hay datos"}';
+                        $response->getBody()->write($payload);
+                        return $response;
+                    }
+                } catch (PDOException $e) {
+                    $payload = '{"error":{"text":'.$e->getMessage().'}}';
                     $response->getBody()->write($payload);
                     return $response;
                 }
-            } catch (PDOException $e) {
-                $payload = '{"error":{"text":'.$e->getMessage().'}}';
-                $response->getBody()->write($payload);
-                return $response;
-            }
+            });
+            $group->post('/nuevo', function (Request $request, Response $response, $args){
+                // $datos = $request->getParsedBody();
+    
+                $datos = json_decode(file_get_contents('php://input'), true);
+                $nombre = filter_var($datos['nombre'], FILTER_SANITIZE_STRING);
+                $carrera = filter_var($datos['carrera'], FILTER_SANITIZE_STRING);
+                $matricula = filter_var($datos['matricula'], FILTER_SANITIZE_STRING);
+                $rfid = filter_var($datos['rfid'], FILTER_SANITIZE_STRING);
+                
+                $sql = "INSERT INTO alumnos (nombre, carrera, matricula, rfid) VALUES 
+                        (:nombre,
+                        :carrera, 
+                        :matricula, 
+                        :rfid)";
+    
+                try {
+                    $db = new db();
+                    $db = $db->conexionDB();
+    
+                    $stmt = $db->prepare($sql);
+    
+                    $stmt->bindParam(':nombre', $nombre);
+                    $stmt->bindParam(':carrera', $carrera);
+                    $stmt->bindParam(':matricula', $matricula);
+                    $stmt->bindParam(':rfid', $rfid);
+    
+                    $stmt->execute();
+    
+                    $response->withHeader('Content-Type', 'application/json');
+                    $payload = '{"respuesta":"nuevo alumno guardado"}';
+                    $response->getBody()->write($payload);
+                    return $response;
+                } catch (PDOException $e) {
+                    $payload = '{"error":{"text":'.$e->getMessage().'}}';
+                    $response->getBody()->write($payload);
+                    return $response;
+                }
+            });
+            $group->put('/modificar', function (Request $request, Response $response, $args){
+                
+                // parse_str($request->getBody()->getContents(), $datos);
+    
+                $datos = json_decode(file_get_contents('php://input'), true);
+                $id_alumno = filter_var($datos['id'], FILTER_SANITIZE_STRING);
+                $nombre = filter_var($datos['nombre'], FILTER_SANITIZE_STRING);
+                $carrera = filter_var($datos['carrera'], FILTER_SANITIZE_STRING);
+                $matricula = filter_var($datos['matricula'], FILTER_SANITIZE_STRING);
+                $rfid = filter_var($datos['rfid'], FILTER_SANITIZE_STRING);
+    
+                $sql = "UPDATE alumnos SET 
+                        nombre = :nombre, 
+                        carrera = :carrera, 
+                        matricula = :matricula, 
+                        rfid = :rfid WHERE id_alumno = :id";
+                
+                try {
+                    $db = new db();
+                    $db = $db->conexionDB();
+    
+                    $stmt = $db->prepare($sql);
+    
+                    $stmt->bindParam(':nombre', $nombre);
+                    $stmt->bindParam(':carrera', $carrera);
+                    $stmt->bindParam(':matricula', $matricula);
+                    $stmt->bindParam(':rfid', $rfid);
+                    $stmt->bindParam(':id', $id_alumno);
+    
+                    $stmt->execute();
+    
+                    $response->withHeader('Content-Type', 'application/json');
+                    $response->getBody()->write(json_encode("datos de alumno modificados"));
+                    return $response;
+                } catch (PDOException $e) {
+                    $payload = '{"error":{"text":'.$e->getMessage().'}}';
+                    $response->getBody()->write($payload);
+                    return $response;
+                }
+            });
+            $group->delete('/borrar', function (Request $request, Response $response, $args){
+                
+                // parse_str($request->getBody()->getContents(), $datos);
+    
+                $datos = json_decode(file_get_contents('php://input'), true);
+                $id_alumno = filter_var($datos['id'], FILTER_SANITIZE_STRING);
+    
+                $sql = "DELETE FROM alumnos WHERE id_alumno = :id";
+                
+                try {
+                    $db = new db();
+                    $db = $db->conexionDB();
+    
+                    $stmt = $db->prepare($sql);
+    
+                    $stmt->bindParam(':id', $id_alumno);
+    
+                    $stmt->execute();
+    
+                    $response->withHeader('Content-Type', 'application/json');
+                    $response->getBody()->write('{"respuesta":"datos de alumno borrados"}');
+                    return $response;
+                } catch (PDOException $e) {
+                    $payload = '{"error":{"text":'.$e->getMessage().'}}';
+                    $response->getBody()->write($payload);
+                    return $response;
+                }
+            });
         });
-        $group->post('/alumnos/nuevo', function (Request $request, Response $response, $args){
-            // $datos = $request->getParsedBody();
+        $group->group('/registros', function (RouteCollectorProxy $group){
+            $group->get('/', function (Request $request, Response $response, $args){
+                $sql = "SELECT 
+                        bitacora_alumnos.id_registro, 
+                        bitacora_alumnos.rfid, 
+                        bitacora_alumnos.laboratorio, 
+                        bitacora_alumnos.fecha, 
+                        bitacora_alumnos.hora, 
+                        alumnos.nombre, 
+                        alumnos.carrera, 
+                        alumnos.matricula, 
+                        practicas.nombre_practica, 
+                        practicas.maestro FROM `bitacora_alumnos` 
+                        INNER JOIN alumnos ON bitacora_alumnos.rfid = alumnos.rfid 
+                        INNER JOIN  practicas ON bitacora_alumnos.id_practica = practicas.id_practica 
+                        WHERE 1";
+                
+                try {
+                    $db = new db();
+                    $db = $db->conexionDB();
+        
+                    $stmt = $db->prepare($sql);
+                    $stmt->execute();
+        
+                    if($stmt->rowCount() > 0){
+                        $alumnos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                        // print_r($alumnos);
+        
+                        $json = json_encode($alumnos);
+                        // print_r (json_last_error());
+        
+                        $response->withHeader('Content-Type', 'application/json');
+                        $response->getBody()->write($json);
+                        return $response;
+                    }else{
+                        $payload = '{"respuesta":"no hay datos"}';
+                        $response->getBody()->write($payload);
+                        return $response;
+                    }
+        
+                    $stmt = null;
+                    $db = null;
+        
+                } catch (PDOException $e) {
+                    // $payload = "exception";
+                    $payload = '{"error":{"text":'.$e->getMessage().'}}';
+                    $response->getBody()->write($payload);
+                    return $response;
+                }
+            });
+            $group->get('/{id}', function (Request $request, Response $response, $args){
+                $id_registro = $request->getAttribute('id');
 
-            $datos = json_decode(file_get_contents('php://input'), true);
-            $nombre = filter_var($datos['nombre'], FILTER_SANITIZE_STRING);
-            $carrera = filter_var($datos['carrera'], FILTER_SANITIZE_STRING);
-            $matricula = filter_var($datos['matricula'], FILTER_SANITIZE_STRING);
-            $rfid = filter_var($datos['rfid'], FILTER_SANITIZE_STRING);
-            
-            $sql = "INSERT INTO alumnos (nombre, carrera, matricula, rfid) VALUES 
-                    (:nombre,
-                    :carrera, 
-                    :matricula, 
-                    :rfid)";
-
-            try {
-                $db = new db();
-                $db = $db->conexionDB();
-
-                $stmt = $db->prepare($sql);
-
-                $stmt->bindParam(':nombre', $nombre);
-                $stmt->bindParam(':carrera', $carrera);
-                $stmt->bindParam(':matricula', $matricula);
-                $stmt->bindParam(':rfid', $rfid);
-
-                $stmt->execute();
-
-                $response->withHeader('Content-Type', 'application/json');
-                $payload = '{"respuesta":"nuevo alumno guardado"}';
-                $response->getBody()->write($payload);
-                return $response;
-            } catch (PDOException $e) {
-                $payload = '{"error":{"text":'.$e->getMessage().'}}';
-                $response->getBody()->write($payload);
-                return $response;
-            }
-        });
-        $group->post('/alumnos/registro', function (Request $request, Response $response, $args){
-            // $datos = $request->getParsedBody();
-
-            $datos = json_decode(file_get_contents('php://input'), true);
-            $rfid = filter_var($datos['rfid'], FILTER_SANITIZE_STRING);
-            $accion = filter_var($datos['accion'], FILTER_SANITIZE_STRING);
-
-            $sql = "INSERT INTO registros (rfid, fecha, hora, accion) VALUES 
-                    (:rfid, 
-                    CURDATE(), 
-                    CURTIME(), 
-                    :accion)";
-
-            try {
-                $db = new db();
-                $db = $db->conexionDB();
-
-                $stmt = $db->prepare($sql);
-
-                $stmt->bindParam(':rfid', $rfid);
-                $stmt->bindParam(':accion', $accion);
-
-                $stmt->execute();
-
-                $response->withHeader('Content-Type', 'application/json');
-                $payload = '{"respuesta":"nuevo registro guardado"}';
-                $response->getBody()->write($payload);
-                return $response;
-            } catch (PDOException $e) {
-                $payload = '{"error":{"text":'.$e->getMessage().'}}';
-                $response->getBody()->write($payload);
-                return $response;
-            }
-        });
-        $group->put('/alumnos/modificar', function (Request $request, Response $response, $args){
-            
-            // parse_str($request->getBody()->getContents(), $datos);
-
-            $datos = json_decode(file_get_contents('php://input'), true);
-            $id_alumno = filter_var($datos['id'], FILTER_SANITIZE_STRING);
-            $nombre = filter_var($datos['nombre'], FILTER_SANITIZE_STRING);
-            $carrera = filter_var($datos['carrera'], FILTER_SANITIZE_STRING);
-            $matricula = filter_var($datos['matricula'], FILTER_SANITIZE_STRING);
-            $rfid = filter_var($datos['rfid'], FILTER_SANITIZE_STRING);
-
-            $sql = "UPDATE alumnos SET 
-                    nombre = :nombre, 
-                    carrera = :carrera, 
-                    matricula = :matricula, 
-                    rfid = :rfid WHERE id = :id";
-            
-            try {
-                $db = new db();
-                $db = $db->conexionDB();
-
-                $stmt = $db->prepare($sql);
-
-                $stmt->bindParam(':nombre', $nombre);
-                $stmt->bindParam(':carrera', $carrera);
-                $stmt->bindParam(':matricula', $matricula);
-                $stmt->bindParam(':rfid', $rfid);
-                $stmt->bindParam(':id', $id_alumno);
-
-                $stmt->execute();
-
-                $response->withHeader('Content-Type', 'application/json');
-                $response->getBody()->write(json_encode("datos de alumno modificados"));
-                return $response;
-            } catch (PDOException $e) {
-                $payload = '{"error":{"text":'.$e->getMessage().'}}';
-                $response->getBody()->write($payload);
-                return $response;
-            }
-        });
-        $group->delete('/alumnos/borrar', function (Request $request, Response $response, $args){
-            
-            // parse_str($request->getBody()->getContents(), $datos);
-
-            $datos = json_decode(file_get_contents('php://input'), true);
-            $id_alumno = filter_var($datos['id'], FILTER_SANITIZE_STRING);
-
-            $sql = "DELETE FROM alumnos WHERE id = :id";
-            
-            try {
-                $db = new db();
-                $db = $db->conexionDB();
-
-                $stmt = $db->prepare($sql);
-
-                $stmt->bindParam(':id', $id_alumno);
-
-                $stmt->execute();
-
-                $response->withHeader('Content-Type', 'application/json');
-                $response->getBody()->write('{"respuesta":"datos de alumno borrados"}');
-                return $response;
-            } catch (PDOException $e) {
-                $payload = '{"error":{"text":'.$e->getMessage().'}}';
-                $response->getBody()->write($payload);
-                return $response;
-            }
+                $sql = "SELECT 
+                        bitacora_alumnos.id_registro, 
+                        bitacora_alumnos.rfid, 
+                        bitacora_alumnos.laboratorio, 
+                        bitacora_alumnos.fecha, 
+                        bitacora_alumnos.hora, 
+                        alumnos.nombre, 
+                        alumnos.carrera, 
+                        alumnos.matricula, 
+                        practicas.nombre_practica, 
+                        practicas.maestro FROM `bitacora_alumnos` 
+                        INNER JOIN alumnos ON bitacora_alumnos.rfid = alumnos.rfid 
+                        INNER JOIN  practicas ON bitacora_alumnos.id_practica = practicas.id_practica 
+                        WHERE bitacora_alumnos.id_registro = :id";
+                
+                try {
+                    $db = new db();
+                    $db = $db->conexionDB();
+        
+                    $stmt = $db->prepare($sql);
+                    $stmt->bindParam(':id', $id_registro);
+                    $stmt->execute();
+        
+                    if($stmt->rowCount() > 0){
+                        $alumnos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                        // print_r($alumnos);
+        
+                        $json = json_encode($alumnos);
+                        // print_r (json_last_error());
+        
+                        $response->withHeader('Content-Type', 'application/json');
+                        $response->getBody()->write($json);
+                        return $response;
+                    }else{
+                        $payload = '{"respuesta":"no hay datos"}';
+                        $response->getBody()->write($payload);
+                        return $response;
+                    }
+        
+                    $stmt = null;
+                    $db = null;
+        
+                } catch (PDOException $e) {
+                    // $payload = "exception";
+                    $payload = '{"error":{"text":'.$e->getMessage().'}}';
+                    $response->getBody()->write($payload);
+                    return $response;
+                }
+            });
+            $group->post('/nuevo', function (Request $request, Response $response, $args){
+                // $datos = $request->getParsedBody();
+    
+                $datos = json_decode(file_get_contents('php://input'), true);
+                $rfid = filter_var($datos['rfid'], FILTER_SANITIZE_STRING);
+                $accion = filter_var($datos['accion'], FILTER_SANITIZE_STRING);
+    
+                $sql = "INSERT INTO registros (rfid, fecha, hora, accion) VALUES 
+                        (:rfid, 
+                        CURDATE(), 
+                        CURTIME(), 
+                        :accion)";
+    
+                try {
+                    $db = new db();
+                    $db = $db->conexionDB();
+    
+                    $stmt = $db->prepare($sql);
+    
+                    $stmt->bindParam(':rfid', $rfid);
+                    $stmt->bindParam(':accion', $accion);
+    
+                    $stmt->execute();
+    
+                    $response->withHeader('Content-Type', 'application/json');
+                    $payload = '{"respuesta":"nuevo registro guardado"}';
+                    $response->getBody()->write($payload);
+                    return $response;
+                } catch (PDOException $e) {
+                    $payload = '{"error":{"text":'.$e->getMessage().'}}';
+                    $response->getBody()->write($payload);
+                    return $response;
+                }
+            });
         });
     });
 });
