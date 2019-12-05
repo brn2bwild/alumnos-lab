@@ -7,6 +7,8 @@ use Slim\Routing\RouteCollectorProxy;
 use Firebase\JWT\JWT;
 
 $app = AppFactory::create();
+$app->setBasePath('/alumnos-lab');
+$app->addRoutingMiddleware();
 
 $app->group('/api', function (RouteCollectorProxy $group){
     $group->group('/v1', function (RouteCollectorProxy $group){
@@ -74,24 +76,24 @@ $app->group('/api', function (RouteCollectorProxy $group){
                     return $response;
                 }
             });
-            $group->get('/{id}', function (Request $request, Response $response, $args){
-                $id_alumno = $request->getAttribute('id');
-    
-                $sql = "SELECT * FROM alumnos WHERE id_alumno = :id";
-    
+            $group->get('/{parametro}/{valor}', function (Request $request, Response $response, $args){
+                $parametro = filter_var($request->getAttribute('parametro'), FILTER_SANITIZE_STRING);
+                $valor = filter_var(utf8_encode($request->getAttribute('valor')), FILTER_SANITIZE_STRING);
+                
+                $sql = "SELECT * FROM alumnos WHERE ".$parametro." = :valor";
+
                 try {
                     $db = new db();
                     $db = $db->conexionDB();
     
                     $stmt = $db->prepare($sql);
-                    $stmt->bindParam(':id', $id_alumno);
+                    $stmt->bindParam(':valor', $valor);
                     $stmt->execute();
     
                     if($stmt->rowCount() > 0){
                         $alumno = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
                         $json = json_encode($alumno);
-    
                         $response->withHeader('Content-Type', 'application/json');
                         $response->getBody()->write($json);
                         return $response;
