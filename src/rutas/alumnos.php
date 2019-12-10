@@ -40,7 +40,7 @@ $app->group('/api', function (RouteCollectorProxy $group){
             return $response;
         });
         $group->group('/alumnos', function (RouteCollectorProxy $group){
-            $group->get('/', function (Request $request, Response $response, $args) {
+            $group->get('', function (Request $request, Response $response, $args) {
                 $sql = "SELECT * FROM alumnos";
         
                 try {
@@ -216,7 +216,7 @@ $app->group('/api', function (RouteCollectorProxy $group){
             });
         });
         $group->group('/registros', function (RouteCollectorProxy $group){
-            $group->get('/', function (Request $request, Response $response, $args){
+            $group->get('', function (Request $request, Response $response, $args){
                 $sql = "SELECT 
                         bitacora_alumnos.id_registro, 
                         bitacora_alumnos.rfid, 
