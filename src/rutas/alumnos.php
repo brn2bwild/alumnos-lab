@@ -718,6 +718,303 @@ $app->group('/api', function (RouteCollectorProxy $group){
                 }
             });
         });
+        $group->group('/practicas', function (RouteCollectorProxy $group){
+            $group->get('', function (Request $request, Response $response, $args){
+                $sql = "SELECT * FROM practicas";
+
+                try {
+                    $db = new db();
+                    $db = $db->conexionDB();
+
+                    $stmt = $db->prepare($sql);
+                    $stmt->execute();
+
+                    if($stmt->rowCount() > 0){
+                        $laboratorios = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+                        $json = json_encode($laboratorios);
+
+                        $response->withHeader('Content-Type', 'application/json');
+                        $response->getBody()->write($json);
+                        return $response;
+                    }else{
+                        $payload = '{"respuesta":"no hay datos"}';
+                        $response->getBody()->write($payload);
+                        return $response;
+                    }
+                } catch (PDOException $e) {
+                    $payload = '{"error":{"text":'.$e->getMessage().'}}';
+                    $response->getBody()->write($payload);
+                    return $response;
+                }
+            });
+            $group->get('/{parametro}/{valor}', function (Request $request, Response $response, $args){
+                $parametro = filter_var($request->getAttribute('parametro'), FILTER_SANITIZE_STRING);
+                $valor = filter_var(utf8_encode($request->getAttribute('valor')), FILTER_SANITIZE_STRING);
+
+                $sql = "SELECT * FROM practicas WHERE ".$parametro." = :valor";
+
+
+                try {
+                    $db = new db();
+                    $db = $db->conexionDB();
+
+                    $stmt = $db->prepare($sql);
+                    $stmt->bindParam(':valor', $valor);
+                    $stmt->execute();
+
+                    if($stmt->rowCount() > 0){
+                        $laboratorios = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+                        $json = json_encode($laboratorios);
+                        $response->withHeader('Content-Type', 'application/json');
+                        $response->getBody()->write($json);
+                        return $response;
+                    }else{
+                        $payload = '{"respuesta":"no hay datos"}';
+                        $response->getBody()->write($payload);
+                        return $response;
+                    }
+                } catch (PDOException $e) {
+                    $payload = '{"error":{"text":'.$e->getMessage().'}}';
+                    $response->getBody()->write($payload);
+                    return $response;
+                }
+            });
+            $group->post('/nuevo', function (Request $request, Response $response, $args){
+                $datos = json_decode(file_get_contents('php://input'), true);
+                $maestro = filter_var($datos['maestro'], FILTER_SANITIZE_STRING);
+                $materia = filter_var($datos['materia'], FILTER_SANITIZE_STRING);
+                // $carrera = filter_var($datos['carrera'], FILTER_SANITIZE_STRING);
+                // $semestre = filter_var($datos['semestre'], FILTER_SANITIZE_STRING);
+                // $grupo = filter_var($datos['grupo'], FILTER_SANITIZE_STRING);
+                // $turno = filter_var($datos['turno'], FILTER_SANITIZE_STRING);
+                // $laboratorio = filter_var($datos['laboratorio'], FILTER_SANITIZE_STRING);
+                // $nombre = filter_var($datos['nombre'], FILTER_SANITIZE_STRING);
+                // $numero = filter_var($datos['numero'], FILTER_SANITIZE_STRING);
+                // $descripcion = filter_var($datos['descripcion'], FILTER_SANITIZE_STRING);
+                // $materiales = filter_var($datos['materiales'], FILTER_SANITIZE_STRING);
+                // $equipo = filter_var($datos['equipo'], FILTER_SANITIZE_STRING);
+                // $reprogramaciones = filter_var($datos['reprogramaciones'], FILTER_SANITIZE_STRING);
+                // $justificacion = filter_var($datos['justificacion'], FILTER_SANITIZE_STRING);
+                // $especificacion = filter_var($datos['especificacion'], FILTER_SANITIZE_STRING);
+                // $fecha_termino = filter_var($datos['fecha_termino'], FILTER_SANITIZE_STRING);
+                // $realizada = filter_var($datos['realizada'], FILTER_SANITIZE_STRING);
+                // $eficiencia = filter_var($datos['eficiencia'], FILTER_SANITIZE_STRING);
+                // $confirma = filter_var($datos['confirma'], FILTER_SANITIZE_STRING);
+                // $observaciones = filter_var($datos['observaciones'], FILTER_SANITIZE_STRING);
+                // $fallas = filter_var($datos['fallas'], FILTER_SANITIZE_STRING);
+                // $observaciones_prof = filter_var($datos['observaciones_prof'], FILTER_SANITIZE_STRING);
+                // $seguimiento = filter_var($datos['seguimiento'], FILTER_SANITIZE_STRING);
+
+                $sql = "INSERT INTO practicas (
+                            maestro, 
+                            materia
+                            -- carrera,
+                            -- semestre,
+                            -- grupo,
+                            -- turno,
+                            -- laboratorio,
+                            -- nombre,
+                            -- numero,
+                            -- descripcion,
+                            -- materiales,
+                            -- equipo,
+                            -- reprogramaciones,
+                            -- justificacion,
+                            -- especificacion,
+                            -- fecha_termino,
+                            -- realizada,
+                            -- eficiencia,
+                            -- confirma,
+                            -- observaciones,
+                            -- fallas,
+                            -- observaciones_prof,
+                            -- seguimiento
+                        ) VALUES (
+                            :maestro,
+                            :materia
+                            -- :carrera,
+                            -- :semestre,
+                            -- :grupo,
+                            -- :turno,
+                            -- :laboratorio,
+                            -- :nombre,
+                            -- :numero,
+                            -- :descripcion,
+                            -- :materiales,
+                            -- :equipo,
+                            -- :reprogramaciones,
+                            -- :justificacion,
+                            -- :especificacion,
+                            -- :fecha_termino,
+                            -- :realizada,
+                            -- :eficiencia,
+                            -- :confirma,
+                            -- :observaciones,
+                            -- :fallas,
+                            -- :observaciones_prof,
+                            -- :seguimiento
+                        )";
+
+                try {
+                    $db = new db();
+                    $db = $db->conexionDB();
+    
+                    $stmt = $db->prepare($sql);
+    
+                    $stmt->bindParam(':maestro', $maestro);
+                    $stmt->bindParam(':materia', $materia);
+                    // $stmt->bindParam(':carrera', $carrera);
+                    // $stmt->bindParam(':semestre', $semestre);
+                    // $stmt->bindParam(':grupo', $grupo);
+                    // $stmt->bindParam(':turno', $turno);
+                    // $stmt->bindParam(':laboratorio', $laboratorio);
+                    // $stmt->bindParam(':nombre', $nombre);
+                    // $stmt->bindParam(':numero', $numero);
+                    // $stmt->bindParam(':descripcion', $descripcion);
+                    // $stmt->bindParam(':materiales', $materiales);
+                    // $stmt->bindParam(':equipo', $equipo);
+                    // $stmt->bindParam(':reprogramaciones', $reprogramaciones);
+                    // $stmt->bindParam(':justificacion', $justificacion);
+                    // $stmt->bindParam(':especificacion', $especificacion);
+                    // $stmt->bindParam(':fecha_termino', $fecha_termino);
+                    // $stmt->bindParam(':realizada', $realizada);
+                    // $stmt->bindParam(':eficiencia', $eficiencia);
+                    // $stmt->bindParam(':confirma', $confirma);
+                    // $stmt->bindParam(':observaciones', $observaciones);
+                    // $stmt->bindParam(':fallas', $fallas);
+                    // $stmt->bindParam(':observaciones_prof', $observaciones_prof);
+                    // $stmt->bindParam(':seguimiento', $seguimiento);
+    
+                    $stmt->execute();
+    
+                    $response->withHeader('Content-Type', 'application/json');
+                    $payload = '{"respuesta":"nueva práctica guardada"}';
+                    $response->getBody()->write($payload);
+                    return $response;
+                } catch (PDOException $e) {
+                    $payload = '{"error":{"text":'.$e->getMessage().'}}';
+                    $response->getBody()->write($payload);
+                    return $response;
+                }
+            });
+            $group->put('/modificar', function (Request $request, Response $response, $args){
+                
+                // parse_str($request->getBody()->getContents(), $datos);
+    
+                $datos = json_decode(file_get_contents('php://input'), true);
+                $id_practica = filter_var($datos['id'], FILTER_SANITIZE_STRING);
+                // $maestro = filter_var($datos['maestro'], FILTER_SANITIZE_STRING);
+                $materia = filter_var($datos['materia'], FILTER_SANITIZE_STRING);
+                $carrera = filter_var($datos['carrera'], FILTER_SANITIZE_STRING);
+                $semestre = filter_var($datos['semestre'], FILTER_SANITIZE_STRING);
+                $grupo = filter_var($datos['grupo'], FILTER_SANITIZE_STRING);
+                $turno = filter_var($datos['turno'], FILTER_SANITIZE_STRING);
+                $laboratorio = filter_var($datos['laboratorio'], FILTER_SANITIZE_STRING);
+                $nombre = filter_var($datos['nombre'], FILTER_SANITIZE_STRING);
+                $numero = filter_var($datos['numero'], FILTER_SANITIZE_STRING);
+                $descripcion = filter_var($datos['descripcion'], FILTER_SANITIZE_STRING);
+                $materiales = filter_var($datos['materiales'], FILTER_SANITIZE_STRING);
+                $equipo = filter_var($datos['equipo'], FILTER_SANITIZE_STRING);
+                // $reprogramaciones = filter_var($datos['reprogramaciones'], FILTER_SANITIZE_STRING);
+                // $justificacion = filter_var($datos['justificacion'], FILTER_SANITIZE_STRING);
+                // $especificacion = filter_var($datos['especificacion'], FILTER_SANITIZE_STRING);
+                // $fecha_termino = filter_var($datos['fecha_termino'], FILTER_SANITIZE_STRING);
+                // $realizada = filter_var($datos['realizada'], FILTER_SANITIZE_STRING);
+                // $eficiencia = filter_var($datos['eficiencia'], FILTER_SANITIZE_STRING);
+                // $confirma = filter_var($datos['confirma'], FILTER_SANITIZE_STRING);
+                // $observaciones = filter_var($datos['observaciones'], FILTER_SANITIZE_STRING);
+                // $fallas = filter_var($datos['fallas'], FILTER_SANITIZE_STRING);
+                // $observaciones_prof = filter_var($datos['observaciones_prof'], FILTER_SANITIZE_STRING);
+                // $seguimiento = filter_var($datos['seguimiento'], FILTER_SANITIZE_STRING);
+
+    
+                $sql = "UPDATE practicas SET 
+                            -- maestro, 
+                            materia
+                            carrera,
+                            semestre,
+                            grupo,
+                            turno,
+                            laboratorio,
+                            nombre,
+                            numero,
+                            descripcion,
+                            materiales,
+                            equipo,
+                            -- reprogramaciones,
+                            -- justificacion,
+                            -- especificacion,
+                            -- fecha_termino,
+                            -- realizada,
+                            -- eficiencia,
+                            -- confirma,
+                            -- observaciones,
+                            -- fallas,
+                            -- observaciones_prof,
+                            -- seguimiento
+                        WHERE id_maestro = :id";
+                
+                try {
+                    $db = new db();
+                    $db = $db->conexionDB();
+    
+                    $stmt = $db->prepare($sql);
+    
+                    $stmt->bindParam(':materia', $materia);
+                    $stmt->bindParam(':carrera', $carrera);
+                    $stmt->bindParam(':semestre', $semestre);
+                    $stmt->bindParam(':grupo', $grupo);
+                    $stmt->bindParam(':turno', $turno);
+                    $stmt->bindParam(':laboratorio', $laboratorio);
+                    $stmt->bindParam(':nombre', $nombre);
+                    $stmt->bindParam(':numero', $numero);
+                    $stmt->bindParam(':descripcion', $descripcion);
+                    $stmt->bindParam(':materiales', $materiales);
+                    $stmt->bindParam(':equipo', $equipo);
+                    $stmt->bindParam(':id', $id_practica);
+    
+                    $stmt->execute();
+    
+                    $response->withHeader('Content-Type', 'application/json');
+                    $response->getBody()->write('{"respuesta":"datos de práctica modificados"}');
+                    return $response;
+                } catch (PDOException $e) {
+                    $payload = '{"error":{"text":'.$e->getMessage().'}}';
+                    $response->getBody()->write($payload);
+                    return $response;
+                }
+            });
+            $group->delete('/borrar', function (Request $request, Response $response, $args){  
+                // parse_str($request->getBody()->getContents(), $datos);
+    
+                $datos = json_decode(file_get_contents('php://input'), true);
+                $id_practica = filter_var($datos['id'], FILTER_SANITIZE_STRING);
+    
+                $sql = "DELETE FROM practicas WHERE id_practica = :id";
+                
+                try {
+                    $db = new db();
+                    $db = $db->conexionDB();
+    
+                    $stmt = $db->prepare($sql);
+    
+                    $stmt->bindParam(':id', $id_practica);
+    
+                    $stmt->execute();
+    
+                    $response->withHeader('Content-Type', 'application/json');
+                    $response->getBody()->write('{"respuesta":"datos de práctica borrados"}');
+                    return $response;
+                } catch (PDOException $e) {
+                    $response->withHeader('Content-Type', 'application/json');
+                    //$payload = '{"error":{"text":'.$e->getMessage().'}}';
+                    $response->getBody()->write('{"error":{"text":'.$e->getMessage().'}}');
+                    return $response;
+                }
+            });
+        });
     });
 });
 
