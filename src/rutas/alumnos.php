@@ -221,20 +221,32 @@ $app->group('/api', function (RouteCollectorProxy $group){
         $group->group('/registros', function (RouteCollectorProxy $group){
             $group->get('', function (Request $request, Response $response, $args){
                 $sql = "SELECT 
-                        bitacora_alumnos.id_registro, 
-                        bitacora_alumnos.rfid, 
-                        bitacora_alumnos.laboratorio, 
-                        bitacora_alumnos.fecha, 
-                        bitacora_alumnos.hora, 
-                        alumnos.nombre, 
-                        alumnos.carrera, 
-                        alumnos.matricula, 
-                        practicas.nombre_practica, 
-                        practicas.maestro,
-                        practicas.sesiones FROM `bitacora_alumnos` 
+                            bitacora_alumnos.id_registro, 
+                            bitacora_alumnos.rfid, 
+                            bitacora_alumnos.laboratorio, 
+                            bitacora_alumnos.fecha, 
+                            bitacora_alumnos.hora, 
+                            alumnos.nombre, 
+                            alumnos.carrera, 
+                            alumnos.matricula 
+                        FROM bitacora_alumnos
                         INNER JOIN alumnos ON bitacora_alumnos.rfid = alumnos.rfid 
-                        INNER JOIN  practicas ON bitacora_alumnos.id_practica = practicas.id_practica 
                         WHERE 1";
+                // $sql = "SELECT 
+                // bitacora_alumnos.id_registro, 
+                // bitacora_alumnos.rfid, 
+                // bitacora_alumnos.laboratorio, 
+                // bitacora_alumnos.fecha, 
+                // bitacora_alumnos.hora, 
+                // alumnos.nombre, 
+                // alumnos.carrera, 
+                // alumnos.matricula, FROM bitacora_alumnos
+                // practicas.nombre, 
+                // practicas.maestro,
+                // practicas.sesiones FROM `bitacora_alumnos` 
+                // INNER JOIN alumnos ON bitacora_alumnos.rfid = alumnos.rfid 
+                // INNER JOIN practicas ON bitacora_alumnos.id_practica = practicas.id_practica 
+                // WHERE 1";
                 
                 try {
                     $db = new db();
@@ -265,40 +277,51 @@ $app->group('/api', function (RouteCollectorProxy $group){
                     return $response;
                 }
             });
-            $group->get('/{id}', function (Request $request, Response $response, $args){
-                $id_registro = filter_var($request->getAttribute('id'), FILTER_SANITIZE_STRING);
+            $group->get('/{parametro}/{valor}', function (Request $request, Response $response, $args){
+                $parametro = filter_var($request->getAttribute('parametro'), FILTER_SANITIZE_STRING);
+                $valor = filter_var($request->getAttribute('valor'), FILTER_SANITIZE_STRING);
 
                 $sql = "SELECT 
-                        bitacora_alumnos.id_registro, 
-                        bitacora_alumnos.rfid, 
-                        bitacora_alumnos.laboratorio, 
-                        bitacora_alumnos.fecha, 
-                        bitacora_alumnos.hora, 
-                        alumnos.nombre, 
-                        alumnos.carrera, 
-                        alumnos.matricula, 
-                        practicas.nombre_practica, 
-                        practicas.maestro,
-                        practicas.sesiones FROM `bitacora_alumnos` 
+                            bitacora_alumnos.id_registro, 
+                            bitacora_alumnos.rfid, 
+                            bitacora_alumnos.laboratorio, 
+                            bitacora_alumnos.fecha, 
+                            bitacora_alumnos.hora, 
+                            alumnos.nombre, 
+                            alumnos.carrera, 
+                            alumnos.matricula
+                        FROM bitacora_alumnos
                         INNER JOIN alumnos ON bitacora_alumnos.rfid = alumnos.rfid 
-                        INNER JOIN  practicas ON bitacora_alumnos.id_practica = practicas.id_practica 
-                        WHERE bitacora_alumnos.id_registro = :id";
+                        WHERE bitacora_alumnos.".$parametro." = :valor";
+
+                    // $sql = "SELECT 
+                    // bitacora_alumnos.id_registro, 
+                    // bitacora_alumnos.rfid, 
+                    // bitacora_alumnos.laboratorio, 
+                    // bitacora_alumnos.fecha, 
+                    // bitacora_alumnos.hora, 
+                    // alumnos.nombre, 
+                    // alumnos.carrera, 
+                    // alumnos.matricula, 
+                    // practicas.nombre, 
+                    // practicas.maestro,
+                    // practicas.sesiones 
+                    // FROM bitacora_alumnos
+                    // INNER JOIN alumnos ON bitacora_alumnos.rfid = alumnos.rfid 
+                    // INNER JOIN  practicas ON bitacora_alumnos.id_practica = practicas.id_practica 
+                    // WHERE bitacora_alumnos.id_registro = :id";
                 
                 try {
                     $db = new db();
                     $db = $db->conexionDB();
         
                     $stmt = $db->prepare($sql);
-                    $stmt->bindParam(':id', $id_registro);
+                    $stmt->bindParam(':valor', $valor);
                     $stmt->execute();
         
                     if($stmt->rowCount() > 0){
-                        $registros = $stmt->fetchAll(PDO::FETCH_ASSOC);
-                        // print_r($registros);
-        
-                        $json = json_encode($registros);
-                        // print_r (json_last_error());
-        
+                        $registros = $stmt->fetchAll(PDO::FETCH_ASSOC);        
+                        $json = json_encode($registros);        
                         $response->withHeader('Content-Type', 'application/json');
                         $response->getBody()->write($json);
                         return $response;
