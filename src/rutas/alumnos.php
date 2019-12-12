@@ -318,68 +318,109 @@ $app->group('/api', function (RouteCollectorProxy $group){
                 }
             });
             $group->post('/nuevo', function (Request $request, Response $response, $args){
-                
-                $rfid = "sdaad12313";
-                $laboratorio = "Automatización y Robótica";
-                $fecha = "2019-12-01";
-                $horas = array(1,2,3);
+                $datos = json_decode(file_get_contents('php://input'), true);
+                $rfid = filter_var($datos['rfid'], FILTER_SANITIZE_STRING);
+                $laboratorio = filter_var($datos['laboratorio'], FILTER_SANITIZE_STRING);
+                // date_default_timezone_set('America/Mexico_City');
                 // $fecha = date("Y-m-d");
-                
-                $sql = "SELECT * FROM practicas WHERE sesiones LIKE '%".$fecha."%'";
-               
+                // $hora = date("H:i:s");
+
+                $sql = "INSERT INTO 
+                            bitacora_alumnos (
+                                rfid, 
+                                laboratorio,
+                                fecha,
+                                hora
+                            ) VALUES (
+                                :rfid,
+                                :laboratorio,
+                                CURDATE(),
+                                CURTIME()
+                            )";
+
                 try {
                     $db = new db();
                     $db = $db->conexionDB();
                     $stmt = $db->prepare($sql);
+
+                    $stmt->bindParam(':rfid', $rfid);
+                    $stmt->bindParam(':laboratorio', $laboratorio);
+
                     $stmt->execute();
-                    
-                    // // ésta consulta se hace para saber el id_práctica de la práctica en curso al momento
-                    // // que el alumno hace el registro
-                    if($stmt->rowCount() > 0){
-                        $practicas = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-                        $id_practica = 0;
-                        foreach($practicas as $practica){
-                            $sesiones = json_decode($practica['sesiones'], true);
-                            foreach($sesiones as $sesion){
-                                if($sesion['fecha'] == $fecha and count(array_diff($sesion['horas'], $horas)) == 0){
-                                    $id_practica = $practica['id_practica'];
-                                    // print_r($id_practica);
-                                }
-                            }
-                        }
-                        
-                        if($id_practica != 0){
-                            $sql = "INSERT INTO bitacora_alumnos (rfid, laboratorio, fecha, hora, id_practica)
-                                VALUES (:rfid, :laboratorio, CURDATE(), CURTIME(), :id_practica)";
-                        
-                            $stmt = $db->prepare($sql);
-
-                            $stmt->bindParam(':rfid', $rfid);
-                            $stmt->bindParam(':laboratorio', $laboratorio);
-                            $stmt->bindParam(':id_practica', $id_practica);
-                            $stmt->execute();
-
-                            $payload = '{"respuesta":"nuevo registro guardado"}';
-                            $response->withHeader('Content-Type','application/json');
-                            $response->getBody()->write($payload);
-                            return $response;
-                        }else{
-                            $payload = '{"respuesta":"no coincide la hora de registro"}';
-                            $response->withHeader('Content-Type','application/json');
-                            $response->getBody()->write($payload);
-                            return $response;    
-                        }
-                    }else{
-                        $payload = '{"respuesta":"no hay datos con la fecha indicada"}';
-                        $response->getBody()->write($payload);
-                        return $response;
-                    }
-                } catch (PDOException $e) {
-                    $payload = '{"error":{"text":'.$e->getMessage().'}}';
+                    $payload = '{"respuesta":"nuevo registro guardado"}';
+                    $response->withHeader('Content-Type','application/json');
                     $response->getBody()->write($payload);
                     return $response;
+                } catch (PDOException $e) {
+                    $response->withHeader('Content-Type','application/json');
+                    $response->getBody()->write('{"error":{"text":'.$e->getMessage().'}}');
+                    return $response;
                 }
+                // estas líneas de código sirven en caso de que requiera verificar la práctica
+                // antes de hacer el registro
+                // $rfid = "sdaad12313";
+                // $laboratorio = "Automatización y Robótica";
+                // $fecha = "2019-12-01";
+                // $horas = array(1,2,3);
+                // $fecha = date("Y-m-d");
+                //echo $hora;
+                
+                // $sql = "SELECT * FROM practicas WHERE sesiones LIKE '%".$fecha."%'";
+               
+                // try {
+                //     $db = new db();
+                //     $db = $db->conexionDB();
+                //     $stmt = $db->prepare($sql);
+                //     $stmt->execute();
+                    
+                //     // // ésta consulta se hace para saber el id_práctica de la práctica en curso al momento
+                //     // // que el alumno hace el registro
+                //     if($stmt->rowCount() > 0){
+                //         $practicas = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+                //         $id_practica = 0;
+                //         foreach($practicas as $practica){
+                //             $sesiones = json_decode($practica['sesiones'], true);
+                //             foreach($sesiones as $sesion){
+                //                 if($sesion['fecha'] == $fecha and count(array_diff($sesion['horas'], $horas)) == 0){
+                //                     $id_practica = $practica['id_practica'];
+                //                     // print_r($id_practica);
+                //                 }
+                //             }
+                //         }
+                        
+                //         if($id_practica != 0){
+                //             $sql = "INSERT INTO bitacora_alumnos (rfid, laboratorio, fecha, hora, id_practica)
+                //                 VALUES (:rfid, :laboratorio, CURDATE(), CURTIME(), :id_practica)";
+                        
+                //             $stmt = $db->prepare($sql);
+
+                //             $stmt->bindParam(':rfid', $rfid);
+                //             $stmt->bindParam(':laboratorio', $laboratorio);
+                //             $stmt->bindParam(':id_practica', $id_practica);
+                //             $stmt->execute();
+
+                //             $payload = '{"respuesta":"nuevo registro guardado"}';
+                //             $response->withHeader('Content-Type','application/json');
+                //             $response->getBody()->write($payload);
+                //             return $response;
+                //         }else{
+                //             $payload = '{"respuesta":"no coincide la hora de registro"}';
+                //             $response->withHeader('Content-Type','application/json');
+                //             $response->getBody()->write($payload);
+                //             return $response;    
+                //         }
+                //     }else{
+                //         $payload = '{"respuesta":"no hay datos con la fecha indicada"}';
+                //         $response->getBody()->write($payload);
+                //         return $response;
+                //     }
+                // } catch (PDOException $e) {
+                //     $payload = '{"error":{"text":'.$e->getMessage().'}}';
+                //     $response->getBody()->write($payload);
+                //     return $response;
+                // }//
             });
         });
         $group->group('/laboratorios', function (RouteCollectorProxy $group){
@@ -452,17 +493,24 @@ $app->group('/api', function (RouteCollectorProxy $group){
                 $hora_salida = filter_var($datos['hora_salida'], FILTER_SANITIZE_STRING);
                 $encargado = filter_var($datos['encargado'], FILTER_SANITIZE_STRING);
 
-                $sql = "INSERT INTO laboratorios (nombre, carrera, hora_entrada, hora_salida, encargado) VALUES
-                        (:nombre,
-                        :carrera,
-                        :hora_entrada,
-                        :hora_salida,
-                        :encargado)";
+                $sql = "INSERT INTO
+                        laboratorios (
+                            nombre, 
+                            carrera, 
+                            hora_entrada, 
+                            hora_salida, 
+                            encargado
+                        ) VALUES (
+                            :nombre,
+                            :carrera,
+                            :hora_entrada,
+                            :hora_salida,
+                            :encargado
+                        )";
 
                 try {
                     $db = new db();
                     $db = $db->conexionDB();
-    
                     $stmt = $db->prepare($sql);
     
                     $stmt->bindParam(':nombre', $nombre);
