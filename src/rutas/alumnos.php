@@ -1015,6 +1015,324 @@ $app->group('/api', function (RouteCollectorProxy $group){
                 }
             });
         });
+        $group->group('/periodos', function (RouteCollectorProxy $group){
+            $group->get('', function (Request $request, Response $response, $args){
+                $sql = "SELECT * FROM periodos";
+
+                try {
+                    $db = new db();
+                    $db = $db->conexionDB();
+
+                    $stmt = $db->prepare($sql);
+                    $stmt->execute();
+
+                    if($stmt->rowCount() > 0){
+                        $laboratorios = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+                        $json = json_encode($laboratorios);
+
+                        $response->withHeader('Content-Type', 'application/json');
+                        $response->getBody()->write($json);
+                        return $response;
+                    }else{
+                        $payload = '{"respuesta":"no hay datos"}';
+                        $response->getBody()->write($payload);
+                        return $response;
+                    }
+                } catch (PDOException $e) {
+                    $payload = '{"error":{"text":'.$e->getMessage().'}}';
+                    $response->getBody()->write($payload);
+                    return $response;
+                }
+            });
+            $group->get('/{parametro}/{valor}', function (Request $request, Response $response, $args){
+                $parametro = filter_var($request->getAttribute('parametro'), FILTER_SANITIZE_STRING);
+                $valor = filter_var(utf8_encode($request->getAttribute('valor')), FILTER_SANITIZE_STRING);
+
+                $sql = "SELECT * FROM periodos WHERE ".$parametro." = :valor";
+
+                try {
+                    $db = new db();
+                    $db = $db->conexionDB();
+
+                    $stmt = $db->prepare($sql);
+                    $stmt->bindParam(':valor', $valor);
+                    $stmt->execute();
+
+                    if($stmt->rowCount() > 0){
+                        $laboratorios = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+                        $json = json_encode($laboratorios);
+                        $response->withHeader('Content-Type', 'application/json');
+                        $response->getBody()->write($json);
+                        return $response;
+                    }else{
+                        $payload = '{"respuesta":"no hay datos"}';
+                        $response->getBody()->write($payload);
+                        return $response;
+                    }
+                } catch (PDOException $e) {
+                    $payload = '{"error":{"text":'.$e->getMessage().'}}';
+                    $response->getBody()->write($payload);
+                    return $response;
+                }
+            });
+            $group->post('/nuevo', function (Request $request, Response $response, $args){
+                $datos = json_decode(file_get_contents('php://input'), true);
+                $fecha_inicio = filter_var($datos['fecha_inicio'], FILTER_SANITIZE_STRING);
+                $fecha_termino = filter_var($datos['fecha_termino'], FILTER_SANITIZE_STRING);
+
+                $sql = "INSERT INTO periodos (fecha_inicio, fecha_termino) VALUES
+                        (:fecha_inicio,
+                        :fecha_termino)";
+
+                try {
+                    $db = new db();
+                    $db = $db->conexionDB();
+    
+                    $stmt = $db->prepare($sql);
+    
+                    $stmt->bindParam(':fecha_inicio', $fecha_inicio);
+                    $stmt->bindParam(':fecha_termino', $fecha_termino);
+    
+                    $stmt->execute();
+    
+                    $response->withHeader('Content-Type', 'application/json');
+                    $payload = '{"respuesta":"nuevo periodo guardado"}';
+                    $response->getBody()->write($payload);
+                    return $response;
+                } catch (PDOException $e) {
+                    $payload = '{"error":{"text":'.$e->getMessage().'}}';
+                    $response->getBody()->write($payload);
+                    return $response;
+                }
+            });
+            $group->put('/modificar', function (Request $request, Response $response, $args){
+                
+                // parse_str($request->getBody()->getContents(), $datos);
+    
+                $datos = json_decode(file_get_contents('php://input'), true);
+                $id_periodo = filter_var($datos['id'], FILTER_SANITIZE_STRING);
+                $fecha_inicio = filter_var($datos['fecha_inicio'], FILTER_SANITIZE_STRING);
+                $fecha_termino = filter_var($datos['fecha_termino'], FILTER_SANITIZE_STRING);
+    
+                $sql = "UPDATE periodos SET 
+                        fecha_inicio = :fecha_inicio, 
+                        fecha_termino = :fecha_termino
+                        WHERE id_periodo = :id";
+                
+                try {
+                    $db = new db();
+                    $db = $db->conexionDB();
+    
+                    $stmt = $db->prepare($sql);
+    
+                    $stmt->bindParam(':fecha_inicio', $fecha_inicio);
+                    $stmt->bindParam(':fecha_termino', $fecha_termino);
+                    $stmt->bindParam(':id', $id_periodo);
+    
+                    $stmt->execute();
+    
+                    $response->withHeader('Content-Type', 'application/json');
+                    $response->getBody()->write('{"respuesta":"datos de periodo modificados"}');
+                    return $response;
+                } catch (PDOException $e) {
+                    $payload = '{"error":{"text":'.$e->getMessage().'}}';
+                    $response->getBody()->write($payload);
+                    return $response;
+                }
+            });
+            $group->delete('/borrar', function (Request $request, Response $response, $args){  
+                // parse_str($request->getBody()->getContents(), $datos);
+    
+                $datos = json_decode(file_get_contents('php://input'), true);
+                $id_periodo = filter_var($datos['id'], FILTER_SANITIZE_STRING);
+    
+                $sql = "DELETE FROM periodos WHERE id_periodo = :id";
+                
+                try {
+                    $db = new db();
+                    $db = $db->conexionDB();
+    
+                    $stmt = $db->prepare($sql);
+    
+                    $stmt->bindParam(':id', $id_periodo);
+    
+                    $stmt->execute();
+    
+                    $response->withHeader('Content-Type', 'application/json');
+                    $response->getBody()->write('{"respuesta":"datos de periodo borrados"}');
+                    return $response;
+                } catch (PDOException $e) {
+                    $response->withHeader('Content-Type', 'application/json');
+                    //$payload = '{"error":{"text":'.$e->getMessage().'}}';
+                    $response->getBody()->write('{"error":{"text":'.$e->getMessage().'}}');
+                    return $response;
+                }
+            });
+        });
+        $group->group('/administrativos', function (RouteCollectorProxy $group){
+            $group->get('', function (Request $request, Response $response, $args){
+                $sql = "SELECT * FROM administrativos";
+
+                try {
+                    $db = new db();
+                    $db = $db->conexionDB();
+
+                    $stmt = $db->prepare($sql);
+                    $stmt->execute();
+
+                    if($stmt->rowCount() > 0){
+                        $laboratorios = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+                        $json = json_encode($laboratorios);
+
+                        $response->withHeader('Content-Type', 'application/json');
+                        $response->getBody()->write($json);
+                        return $response;
+                    }else{
+                        $payload = '{"respuesta":"no hay datos"}';
+                        $response->getBody()->write($payload);
+                        return $response;
+                    }
+                } catch (PDOException $e) {
+                    $payload = '{"error":{"text":'.$e->getMessage().'}}';
+                    $response->getBody()->write($payload);
+                    return $response;
+                }
+            });
+            $group->get('/{parametro}/{valor}', function (Request $request, Response $response, $args){
+                $parametro = filter_var($request->getAttribute('parametro'), FILTER_SANITIZE_STRING);
+                $valor = filter_var(utf8_encode($request->getAttribute('valor')), FILTER_SANITIZE_STRING);
+
+                $sql = "SELECT * FROM administrativos WHERE ".$parametro." = :valor";
+
+                try {
+                    $db = new db();
+                    $db = $db->conexionDB();
+
+                    $stmt = $db->prepare($sql);
+                    $stmt->bindParam(':valor', $valor);
+                    $stmt->execute();
+
+                    if($stmt->rowCount() > 0){
+                        $laboratorios = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+                        $json = json_encode($laboratorios);
+                        $response->withHeader('Content-Type', 'application/json');
+                        $response->getBody()->write($json);
+                        return $response;
+                    }else{
+                        $payload = '{"respuesta":"no hay datos"}';
+                        $response->getBody()->write($payload);
+                        return $response;
+                    }
+                } catch (PDOException $e) {
+                    $payload = '{"error":{"text":'.$e->getMessage().'}}';
+                    $response->getBody()->write($payload);
+                    return $response;
+                }
+            });
+            $group->post('/nuevo', function (Request $request, Response $response, $args){
+                $datos = json_decode(file_get_contents('php://input'), true);
+                $nombre = filter_var($datos['nombre'], FILTER_SANITIZE_STRING);
+                $departamento = filter_var($datos['departamento'], FILTER_SANITIZE_STRING);
+                $privilegios = filter_var($datos['privilegios'], FILTER_SANITIZE_STRING);
+
+                $sql = "INSERT INTO administrativos (nombre, departamento, privilegios) VALUES
+                        (:nombre,
+                        :departamento,
+                        :privilegios)";
+
+                try {
+                    $db = new db();
+                    $db = $db->conexionDB();
+    
+                    $stmt = $db->prepare($sql);
+    
+                    $stmt->bindParam(':nombre', $nombre);
+                    $stmt->bindParam(':departamento', $departamento);
+                    $stmt->bindParam(':privilegios', $privilegios);
+    
+                    $stmt->execute();
+    
+                    $response->withHeader('Content-Type', 'application/json');
+                    $payload = '{"respuesta":"nuevo administrativo guardado"}';
+                    $response->getBody()->write($payload);
+                    return $response;
+                } catch (PDOException $e) {
+                    $payload = '{"error":{"text":'.$e->getMessage().'}}';
+                    $response->getBody()->write($payload);
+                    return $response;
+                }
+            });
+            $group->put('/modificar', function (Request $request, Response $response, $args){
+                
+                // parse_str($request->getBody()->getContents(), $datos);
+    
+                $datos = json_decode(file_get_contents('php://input'), true);
+                $id_administrativo = filter_var($datos['id'], FILTER_SANITIZE_STRING);
+                $nombre = filter_var($datos['nombre'], FILTER_SANITIZE_STRING);
+                $departamento = filter_var($datos['departamento'], FILTER_SANITIZE_STRING);
+                $privilegios = filter_var($datos['privilegios'], FILTER_SANITIZE_STRING);
+    
+                $sql = "UPDATE administrativos SET 
+                        nombre = :nombre, 
+                        departamento = :departamento,
+                        privilegios = :privilegios
+                        WHERE id_administrativo = :id";
+                
+                try {
+                    $db = new db();
+                    $db = $db->conexionDB();
+    
+                    $stmt = $db->prepare($sql);
+    
+                    $stmt->bindParam(':nombre', $nombre);
+                    $stmt->bindParam(':departamento', $departamento);
+                    $stmt->bindParam(':privilegios', $privilegios);
+                    $stmt->bindParam(':id', $id_administrativo);
+    
+                    $stmt->execute();
+    
+                    $response->withHeader('Content-Type', 'application/json');
+                    $response->getBody()->write('{"respuesta":"datos de administrativo modificados"}');
+                    return $response;
+                } catch (PDOException $e) {
+                    $payload = '{"error":{"text":'.$e->getMessage().'}}';
+                    $response->getBody()->write($payload);
+                    return $response;
+                }
+            });
+            $group->delete('/borrar', function (Request $request, Response $response, $args){  
+                // parse_str($request->getBody()->getContents(), $datos);
+    
+                $datos = json_decode(file_get_contents('php://input'), true);
+                $id_administrativo = filter_var($datos['id'], FILTER_SANITIZE_STRING);
+    
+                $sql = "DELETE FROM administrativos WHERE id_administrativo = :id";
+                
+                try {
+                    $db = new db();
+                    $db = $db->conexionDB();
+    
+                    $stmt = $db->prepare($sql);
+    
+                    $stmt->bindParam(':id', $id_administrativo);
+    
+                    $stmt->execute();
+    
+                    $response->withHeader('Content-Type', 'application/json');
+                    $response->getBody()->write('{"respuesta":"datos de administrativo borrados"}');
+                    return $response;
+                } catch (PDOException $e) {
+                    $response->withHeader('Content-Type', 'application/json');
+                    //$payload = '{"error":{"text":'.$e->getMessage().'}}';
+                    $response->getBody()->write('{"error":{"text":'.$e->getMessage().'}}');
+                    return $response;
+                }
+            });
+        });
     });
 });
 
