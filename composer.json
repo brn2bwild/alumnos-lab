@@ -7,6 +7,6 @@
         "guzzlehttp/psr7": "^1.6",
         "http-interop/http-factory-guzzle": "^1.0",
         "zendframework/zend-diactoros": "^2.2",
-        "firebase/php-jwt": "^5.0"
+        "firebase/php-jwt": "^6.0"
     }
 }
